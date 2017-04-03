@@ -51,7 +51,7 @@ class HTTPRequest(object):
 
 def send_response(request_path):
     if http_request.method == "GET":
-        print("request_path = " + request_path)
+        print("request path: " + request_path)
         html_resp = io.StringIO()
         if os.path.isdir(request_path):
             if not http_request.route.endswith('/'):
@@ -64,7 +64,6 @@ def send_response(request_path):
                     ).to_bytes()
                 )
             else:
-                # html_resp.write(b"%s 200 OK\n\n" % bytes(http_request.http_version, 'utf-8'))
                 list_d = os.listdir(path=request_path)
                 if "index.html" in list_d:
                     with open(os.path.join(request_path, "index.html"), 'rb') as file:
@@ -73,6 +72,8 @@ def send_response(request_path):
                 else:
                     html_resp.write("<html>\n<body>\n<ul>\n")
                     for name in list_d:
+                        if os.path.isdir(name):
+                            name += '/'
                         html_resp.write("<li><a href={}>{}</a>\n".format(os.path.join(http_request.route, name), name))
                     html_resp.write("</ul>\n</body>\n</html>\n")
                     con.sendall(HTTPResponse(http_request.http_version, 200, body=html_resp.getvalue()).to_bytes())
@@ -81,10 +82,7 @@ def send_response(request_path):
             cont_type = mimetypes.guess_type(base_name)[0]
             if cont_type is None:
                 cont_type = "application/octet-stream"
-            print(cont_type)
-            # html_resp.write(b"%s 200 OK\n" % bytes(http_request.http_version, 'utf-8'))
-            # html_resp.write(b"Content-Type: %s\n" % bytes(cont_type, 'utf-8'))
-            # html_resp.write(b"Content-length: %s\n\n" % bytes(str(os.path.getsize(request_path)), 'utf-8'))
+            print("file type: '{}'".format(cont_type))
             con.sendall(
                 HTTPResponse(
                     http_request.http_version,
@@ -116,11 +114,6 @@ def send_response(request_path):
     con.close()
 
 
-# def not_found():
-#     return \
-#         b"%s 404 Not Found \n\n 404 Not Found" % bytes(http_request.http_version, 'utf-8')
-
-
 HOST, PORT = 'localhost', 8888
 
 listen_socket = socket.socket()
@@ -129,15 +122,16 @@ listen_socket.bind((HOST, PORT))
 listen_socket.listen(5)
 print('Serving HTTP on port %s ...' % PORT)
 while True:
-    # try:
-    con, client_address = listen_socket.accept()
-    request = con.recv(1024)
-    if request != b'':
-        print(request)
+    try:
+        con, client_address = listen_socket.accept()
+        request = con.recv(1024)
+        if request != b'':
+            print("request: {}".format(request))
 
-        http_request = HTTPRequest(request.decode("utf-8"))
-        current_directory = os.getcwd()
-        send_response(os.path.join(current_directory, http_request.route[1:]))
-        print("------------------------------------------------------------------------------------ \n")
-    # except Exception:
-    #     print('exception')
+            http_request = HTTPRequest(request.decode("utf-8"))
+            current_directory = os.getcwd()
+            print("current directory: {}".format(current_directory))
+            send_response(os.path.join(current_directory, http_request.route[1:]))
+            print("------------------------------------------------------------------------------------ \n")
+    except Exception:
+        print('exception')
