@@ -70,7 +70,8 @@ def send_response(request_path):
                         html_resp.write(str(file.read(), 'utf-8'))
                     con.sendall(HTTPResponse(http_request.http_version, 200, body=html_resp.getvalue()).to_bytes())
                 else:
-                    html_resp.write("<html>\n<body>\n<ul>\n")
+                    html_resp.write("<html>\n<title>Directory listing for %s</title>\n" % http_request.route)
+                    html_resp.write("<body>\n<h2>Current directory: %s</h2>\n<ul>\n" % http_request.route)
                     for name in list_d:
                         if os.path.isdir(name):
                             name += '/'
